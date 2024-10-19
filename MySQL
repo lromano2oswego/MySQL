@@ -37,7 +37,7 @@ CREATE TABLE family_members (
     member_id INT AUTO_INCREMENT,       -- identifier for each family member
     user_id INT,                        -- user who owns the family tree
     tree_id INT,                        -- References the family tree
-    name VARCHAR(200)
+    name VARCHAR(200),
     birthdate DATE,
     deathdate DATE,
     gender ENUM('Male', 'Female', 'Other'),
