@@ -144,7 +144,7 @@ SELECT user_id, username FROM users WHERE email_address = ?;
 
 If no user exists create a new user -
 INSERT INTO users (username, email_address)
-VALUES (?, ?); -- Role is default set to 'Guest'
+VALUES (?, ?);
 
 Retrieve data for already registered user (if user exists) -
 SELECT user_id, username FROM users WHERE email_address = ?;
