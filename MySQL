@@ -268,4 +268,78 @@ WHERE tree_id = ? AND user_id = ?;
 Handling a user accepting the request -
 UPDATE collaborations SET status = ‘Accepted’, role = ‘Editor’
 WHERE tree_id = ? AND user_id = ?;
+—--------------------------------------------------------------------------------------------
+
+For Suggest Edit:
+Store the suggested edit -
+INSERT INTO suggested_edits (member_id, suggested_by, field_name, old_value, new_value)
+VALUES (?, ?, ?, ?, ?);
+
+Family owner is notified and views the suggested edit(s) -
+SELECT suggestion_id, member_id, field_name, old_value, new_value
+FROM suggested_edits WHERE suggestion_status = ‘Pending’;
+
+Apply suggested edit(s) if accepted -
+UPDATE family_members SET field_name = ?
+WHERE member_id = ?;
+
+Update suggested edit as accepted -
+UPDATE suggested_edits SET suggestion_status = ‘Accepted’ 
+WHERE suggestion_id = ?;
+
+If the request is denied delete the suggested edit -
+DELETE FROM suggested_edits WHERE suggestion_id = ?;
+—--------------------------------------------------------------------------------------
+
+For Edit Individual:
+If user selects to delete an individual, delete relations -
+DELETE FROM relationships
+WHERE member1_id = ? OR member2_ID = ?;
+
+Delete the individual -
+DELETE FROM family_members
+WHERE member_id = ?;
+
+Retrieve individual details that is being edited -
+SELECT name, birthdate, gender FROM family_members
+WHERE member_id = ?;
+
+Update individual details - 
+UPDATE family_members SET name = ?, birthdate = ?, gender = ?
+WHERE member_id = ?;
+
+Update relationships where applicable -
+UPDATE relationships SET relationships = ?
+WHERE (member1_id = ? AND member2_id = ?)
+        OR (member1_id = ? AND member2_id = ?);
+—--------------------------------------------------------------------------
+
+For Merge Trees:
+Retrieve family trees for both owners, do the same query for each owner -
+SELECT member_id, name, birthdate, gender, additional_info
+FROM family_members WHERE tree_id = ?;
+
+If conflict is resolve update existing record -
+UPDATE family_members SET name = ?, birthdate = ?, gender = ?, additional_info = ?
+WHERE member_id = ?;
+
+If a new individual is created -
+INSERT INTO family_members(tree_id, name, birthdate, gender, additional_info, added_by)
+VALUES (?, ?, ?, ?, ?, ?);
+
+If a new tree is created as a result -
+INSERT INTO family_trees (tree_name, user_id, privacy_setting)
+VALUES(?, ?, ?);
+
+Update individual records to show merge  -
+UPDATE family_members SET tree_id = ? WHERE member_id = ?;
+Follow delete tree steps to remove any trees not needed
+
+Possibly remove collaborations from new merged tree and make owners re invite collaborators -
+DELETE FROM collaborations WHERE tree_id = ?;
+
+Update the merged tree to have two owners -
+INSERT INTO collaborations (tree_id, user_id, role, status)
+VALUES (?, ?, ‘Owner’, ‘Accepted’), (?, ?, ‘Owner’, ‘Accepted’);
+
 
