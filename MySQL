@@ -207,8 +207,8 @@ SELECT tree_name, privacy_setting FROM family_trees
 WHERE family_tree_id = ?;
 
 Insert new individual after details are provided -
-INSERT INTO family_members (user_id, tree_id, name, birthdate, deathdate, gender, added_by, additional_info) 
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO family_members (user_id, tree_id, name, birthdate, gender, added_by) 
+VALUES (?, ?, ?, ?, ?, ?);
 
 User specifies relationships with already created individuals -
 INSERT INTO relationships (tree_id, member1_id, member2_id, relationship)
