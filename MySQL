@@ -341,5 +341,10 @@ DELETE FROM collaborations WHERE tree_id = ?;
 Update the merged tree to have two owners -
 INSERT INTO collaborations (tree_id, user_id, role, status)
 VALUES (?, ?, ‘Owner’, ‘Accepted’), (?, ?, ‘Owner’, ‘Accepted’);
+------------------------------------------------------------------------------
+
+User wants to change tree privacy settings:
+UPDATE family_trees SET privacy_setting = ?
+WHERE tree_id = ?;
 
 
