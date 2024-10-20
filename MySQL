@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------------------
 DATABASE SCHEMA ===================================================================
 -----------------------------------------------------------------------------------
-
 USE familytree;
 
 CREATE TABLE users (
@@ -59,6 +58,18 @@ INSERT INTO family_members (user_id, tree_id, name, birthdate, deathdate, gender
 VALUES (1, 1, 'John Jr. Smith', '2000-01-01', NULL, 'Male', 1, NULL);
 INSERT INTO family_members (user_id, tree_id, name, birthdate, deathdate, gender, added_by, additional_info)
 VALUES (3, 2, 'Luke Dunphy', '2002-05-12', NULL, 'Male', 3, NULL);
+
+CREATE TABLE suggested_edits (
+    suggestion_id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT, -- references which family member is being edited
+    suggested_by INT, -- user id that suggested the edit
+    field_name VARCHAR(100), -- name of the field being edited (name, birthdate, etc.)
+    old_value VARCHAR(2000), -- value that is being changed
+    new_value VARCHAR(2000), -- new value inputed by editor
+    suggestion_status ENUM('Pending', 'Accepted', 'Denied') DEFAULT 'Pending',
+    FOREIGN KEY (member_id) REFERENCES family_members(member_id) ON DELETE CASCADE,
+    FOREIGN KEY (suggested_by) REFERENCES users(user_id) ON DELETE CASCADE
+);
 
 CREATE TABLE relationships (
     relationship_id INT AUTO_INCREMENT,       -- identifier for each relationship
@@ -151,3 +162,110 @@ VALUES (?, ?, 'Owner', 'Accepted');
 Optionally inviting a collaborator -
 INSERT INTO collaborations (tree_id, user_id, role, status)
 VALUES (?, ?, 'Editor', 'Pending');
+—----------------------------------------------------------------
+
+For Edit Tree Information:
+When user clicks Edit Tree, tree name and privacy settings are retrieved -
+SELECT tree_name, privacy_setting FROM family_trees
+WHERE family_tree_id = ?;
+
+
+Update the tree name to the user’s changed tree name -
+UPDATE family_trees SET tree_name = ? 
+WHERE family_tree_id = ?;
+
+Update family tree privacy settings -
+UPDATE family_trees SET privacy_setting = ?
+WHERE family_tree_id = ?;
+—------------------------------------------------------------------
+
+For Delete Tree:
+Retrieve all data to display what is going to be deleted or just for tracking first find individuals in the tree -
+SELECT member_id, name FROM family_members
+WHERE tree_id = ?;
+
+Find relationships in the tree -
+SELECT relationship_id, member1_id, member2_id, relationship FROM relationships 
+WHERE tree_id = ?;
+
+Delete relationships -
+DELETE FROM relationships WHERE tree_id = ?;
+
+Delete individuals -
+DELETE FROM family_members WHERE tree_id = ?;
+
+Remove collaborators as the tree they are associated with will no longer exist -
+DELETE FROM collaborations WHERE tree_id = ?;
+
+Delete family tree after previous steps are removed -
+DELETE FROM family_trees WHERE family_tree_id = ?;
+—--------------------------------------------------------------------
+
+For Create Individual:
+Retrieve tree data when add individual is clicked -
+SELECT tree_name, privacy_setting FROM family_trees
+WHERE family_tree_id = ?;
+
+Insert new individual after details are provided -
+INSERT INTO family_members (user_id, tree_id, name, birthdate, gender, added_by, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+User specifies relationships with already created individuals -
+INSERT INTO relationships (tree_id, member1_id, member2_id, relationship)
+VALUES (?, ?, ?, ?);
+
+User sets additional info for an individual -
+UPDATE family_members SET deathdate = ?, additional_info = ?
+WHERE member_id = ?;
+
+User adds file attachments or images -
+INSERT INTO attachments (member_id, type_of_file, file_data, uploaded_by)
+VALUES (?, ?, ?, ?);
+—-----------------------------------------------------------------------------------
+
+For Delete Individual:
+Find individual -
+SELECT member_id, name, tree_id FROM family_members
+WHERE member_id = ?
+
+Find relationships -
+SELECT relationship_id, member1_id, member2_id, relationship FROM relationships
+WHERE member1_id = ? OR member2_id = ?;
+
+
+Delete relationships -
+DELETE FROM relationships WHERE member1_id = ? OR member2_id = ?;
+
+Delete Individual - 
+DELETE FROM family_members WHERE member_id = ?;
+
+After deleting, the system checks for orphaned relationships that were created as a result of deleting -
+SELECT member_id FROM family_members
+WHERE member_id NOT IN (SELECT member1_id FROM relationships)
+AND member_id NOT IN (SELECT member2_id FROM relationships)
+AND tree_id = ?;
+
+Delete orphaned individuals -
+DELETE FROM family_members
+WHERE member_id = ? AND tree_id = ?;
+
+Update the family tree with new information -
+SELECT member_id, name, birthdate, deathdate, gender FROM family_members
+WHERE tree_id = ?;
+—----------------------------------------------------------------------------------
+
+For Invite Collaborator:
+Search for a user by their username -
+SELECT user_id, username FROM users WHERE username = ?;
+
+Insert a pending collaboration if username found -
+INSERT INTO collaborations (tree_id, user_id, role, status)
+VALUES (?, ?, ‘Editor’, ‘Pending’);
+
+Handling a user denying the request -
+UPDATE collaborations SET status = ‘Declined’
+WHERE tree_id = ? AND user_id = ?;
+
+Handling a user accepting the request -
+UPDATE collaborations SET status = ‘Accepted’, role = ‘Editor’
+WHERE tree_id = ? AND user_id = ?;
+
